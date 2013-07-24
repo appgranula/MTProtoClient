@@ -94,8 +94,7 @@ public class Authorization {
                 pqStr = pqStr.replaceAll("\\s","");
                 BigInteger pq = new BigInteger(pqStr,16);
 
-                PollardRho.factor(pq);
-                BigInteger p = PollardRho.divider;
+                BigInteger p = new ShenksFactor().factorize(new BigInteger("1724114033281923457"));
                 BigInteger q = pq.divide(p);
                 if(p.compareTo(q) > 0){
                     BigInteger tmp = p;

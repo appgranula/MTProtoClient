@@ -26,7 +26,13 @@ public class MainActivity extends Activity {
         /*mTcpClient = new TCPClient();
         mTcpClient.execute();  */
 
-        Authorization.testAuth();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //To change body of implemented methods use File | Settings | File Templates.
+                Authorization.testAuth();
+            }
+        }).start();
 
 
 
