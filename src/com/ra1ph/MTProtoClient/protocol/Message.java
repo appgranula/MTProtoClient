@@ -11,7 +11,7 @@ import java.util.Arrays;
  * Time: 17:08
  * To change this template use File | Settings | File Templates.
  */
-public class Message extends Packet {
+public class Message extends PacketSimple {
     private static final int AUTH_KEY_SIZE = 8;
     private static final int MESSAGE_ID_SIZE = 8;
     private static final int MESSAGE_LENGTH_SIZE = 4;
@@ -20,6 +20,7 @@ public class Message extends Packet {
     private byte[] messageData;
     ByteBuffer buffer;
     private long timeOffset = 0;
+    private long id = 0;
 
     private int errorCode = 0;
 
@@ -56,8 +57,8 @@ public class Message extends Packet {
 
     private void setMessageId() {
         this.buffer.order(ByteOrder.LITTLE_ENDIAN);
-        long id = (System.currentTimeMillis() / 1000L) << 32;
-        id += timeOffset;
+        id = (System.currentTimeMillis() / 1000L) << 32;
+        id += timeOffset & 0xFFFFFFFF00000000L;
         this.buffer.putLong(8, id);
     }
 
@@ -78,11 +79,21 @@ public class Message extends Packet {
             int end = msgData.length;
             byte[] body = Arrays.copyOfRange(msgData, start, end);
             this.rawMessageData = body;
+
+            byte[] id = Arrays.copyOfRange(msgData, AUTH_KEY_SIZE, AUTH_KEY_SIZE + MESSAGE_ID_SIZE);
+            ByteBuffer temp = ByteBuffer.allocate(MESSAGE_ID_SIZE);
+            temp.order(ByteOrder.LITTLE_ENDIAN);
+            temp.put(id);
+            this.id = temp.getLong(0);
         }
         return error;
     }
 
     public byte[] getRawMessageData() {
         return rawMessageData;
+    }
+
+    public long getId() {
+        return id;
     }
 }

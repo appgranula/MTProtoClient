@@ -67,4 +67,8 @@ public class TLInteger256 extends TLObject {
     public int getHashConstructor() {
         return 0;  //To change body of implemented methods use File | Settings | File Templates.
     }
+
+    public byte[] getBytes() {
+        return serialize();
+    }
 }

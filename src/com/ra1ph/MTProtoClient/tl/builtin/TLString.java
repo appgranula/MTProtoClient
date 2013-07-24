@@ -70,21 +70,29 @@ public class TLString extends TLObject {
     @Override
     public TLString deserialize(byte[] byteData) {
         int length = byteData[0];
+        byte[] temp = null;
         TLString tlString;
-        if (length < 254) {
-            byte[] temp = Arrays.copyOfRange(byteData, 1, length + 1);
-            len = temp.length;
-            tlString = new TLString(temp);
-            this.str = new String(temp);
+
+        if (byteData[0]!= (byte) 0xFE) {
+            temp = Arrays.copyOfRange(byteData, 1, length + 1);
         } else {
             ByteBuffer buffer = ByteBuffer.allocate(4);
             buffer.put(byteData, 1, 3);
             length = buffer.getInt(0);
-            byte[] temp = Arrays.copyOfRange(byteData, 4, length + 4);
-            len = temp.length;
-            tlString = new TLString(temp);
-            this.str = new String(temp);
+            temp = Arrays.copyOfRange(byteData, 4, length + 4);
+
         }
+
+        len = temp.length;
+        tlString = new TLString(temp);
+
+        char[] str = new char[temp.length];
+        for(int i=0;i<str.length;i++){
+            str[i]= (char) temp[i];
+        }
+
+        this.str = new String(str);
+
         return tlString;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
@@ -105,6 +113,15 @@ public class TLString extends TLObject {
             len = rounded;
         }
         return len;
+    }
+
+    public byte[] getByteValue(){
+        char[] chStr = str.toCharArray();
+        byte[] temp = new byte[chStr.length];
+        for(int i=0;i<chStr.length;i++){
+            temp[i]= (byte) chStr[i];
+        }
+        return temp;
     }
 
 }

@@ -1,6 +1,10 @@
 package com.ra1ph.MTProtoClient.tl;
 
+import com.ra1ph.MTProtoClient.tl.crypto.ServerDHData;
+import com.ra1ph.MTProtoClient.tl.functions.ReqDH;
 import com.ra1ph.MTProtoClient.tl.functions.ReqPQ;
+import com.ra1ph.MTProtoClient.tl.functions.ResDHfail;
+import com.ra1ph.MTProtoClient.tl.functions.ResDHok;
 import com.ra1ph.MTProtoClient.tl.functions.ResPQ;
 
 import java.lang.reflect.InvocationTargetException;
@@ -30,6 +34,10 @@ public class TLUtility {
 
         obj.add(ResPQ.class);
         obj.add(ReqPQ.class);
+        obj.add(ReqDH.class);
+        obj.add(ResDHok.class);
+        obj.add(ResDHfail.class);
+        obj.add(ServerDHData.class);
 
         for(int i=0;i<obj.size();i++){
             try {
@@ -109,12 +117,13 @@ public class TLUtility {
 
     public static String bytesToHex(byte[] bytes) {
         final char[] hexArray = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-        char[] hexChars = new char[bytes.length * 2];
+        char[] hexChars = new char[bytes.length * 3];
         int v;
         for (int j = 0; j < bytes.length; j++) {
             v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+            hexChars[j * 3] = hexArray[v >>> 4];
+            hexChars[j * 3 + 1] = hexArray[v & 0x0F];
+            hexChars[j * 3 + 2] = ' ';
         }
         return new String(hexChars);
     }

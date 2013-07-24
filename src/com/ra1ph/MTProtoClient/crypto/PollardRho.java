@@ -41,10 +41,12 @@ public class PollardRho {
     }
 
     public static void factor(BigInteger N) {
-        if (divider != null) {
+        if (divider == null) {
             if (N.compareTo(ONE) == 0) return;
             if (N.isProbablePrime(20)) {
+                divider = N;
                 Log.d("myLog", N.toString());
+                return;
             }
             BigInteger divisor = rho(N);
             factor(divisor);

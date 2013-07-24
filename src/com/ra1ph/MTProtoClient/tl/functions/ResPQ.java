@@ -73,4 +73,6 @@ public class ResPQ extends TLObject {
     public TLString getPq() {
         return pq;
     }
+
+
 }

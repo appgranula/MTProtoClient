@@ -1,12 +1,15 @@
 package com.ra1ph.MTProtoClient.crypto;
 
 import android.util.Log;
+
 import com.ra1ph.MTProtoClient.tl.TLUtility;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.*;
@@ -26,7 +29,8 @@ import java.util.Random;
  */
 public class CryptoUtility {
 
-    static final int DATA_WITH_HASH_SIZE=255;
+    static final int AES_BLOCK_SIZE = 16;
+    static final int DATA_WITH_HASH_SIZE = 255;
     static final String RSA_PUBLIC_SERVER_KEY = "MIIBCgKCAQEAwVACPi9w23mF3tBkdZz+zwrzKOaaQdr01vAbU4E1pvkfj4sqDsm6" +
             "lyDONS789sVoD/xCS9Y0hkkC3gtL1tSfTlgCMOOul9lcixlEKzwKENj1Yz/s7daS" +
             "an9tqw3bfUV/nqgbhGX81v/+7RFAEd+RwFnK7a+XYl9sluzHRyVVaTTveB2GazTw" +
@@ -35,7 +39,7 @@ public class CryptoUtility {
             "Slv8kg9qv1m6XHVQY3PnEw+QQtqSIXklHwIDAQAB";
 
 
-    public static byte[] getSHA1hash(byte[] dataByte){
+    public static byte[] getSHA1hash(byte[] dataByte) {
         MessageDigest md = null;
         byte[] sha1hash = new byte[20];
         try {
@@ -49,7 +53,7 @@ public class CryptoUtility {
         return null;
     }
 
-    public static byte[] getDataWithHash(byte[] hash, byte[] data){
+    public static byte[] getDataWithHash(byte[] hash, byte[] data) {
         ByteBuffer buffer = ByteBuffer.allocate(DATA_WITH_HASH_SIZE);
         buffer.put(hash);
         buffer.put(data);
@@ -59,7 +63,7 @@ public class CryptoUtility {
         return buffer.array();
     }
 
-    public static byte[] getRSAEncryptedData(byte[] dataWithHash){
+    public static byte[] getRSAEncryptedData(byte[] dataWithHash) {
         BigInteger modulus = new BigInteger("C150023E2F70DB7985DED064759CFECF0AF328E69A41DAF4D6F01B538135A6F91F8F8B2A0EC9BA9720CE352EFCF6C5680FFC424BD634864902DE0B4BD6D49F4E580230E3AE97D95C8B19442B3C0A10D8F5633FECEDD6926A7F6DAB0DDB7D457F9EA81B8465FCD6FFFEED114011DF91C059CAEDAF97625F6C96ECC74725556934EF781D866B34F011FCE4D835A090196E9A5F0E4449AF7EB697DDB9076494CA5F81104A305B6DD27665722C46B60E5DF680FB16B210607EF217652E60236C255F6A28315F4083A96791D7214BF64C1DF4FD0DB1944FB26A2A57031B32EEE64AD15A8BA68885CDE74A5BFC920F6ABF59BA5C75506373E7130F9042DA922179251F", 16);
         BigInteger pubExp = new BigInteger("010001", 16);
 
@@ -69,7 +73,7 @@ public class CryptoUtility {
             RSAPublicKeySpec pubKeySpec = new RSAPublicKeySpec(modulus, pubExp);
             RSAPublicKey key = (RSAPublicKey) keyFactory.generatePublic(pubKeySpec);
 
-            Cipher cipher = Cipher.getInstance("RSA/IGE/NoPadding");
+            Cipher cipher = Cipher.getInstance("RSA/ECB/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] cipherData = cipher.doFinal(dataWithHash);
         } catch (NoSuchAlgorithmException e) {
@@ -88,14 +92,155 @@ public class CryptoUtility {
         return null;
     }
 
-    public static byte[] getRSAHackdData(byte[] dataWithHash){
+    public static byte[] getRSAHackdData(byte[] dataWithHash) {
         BigInteger modulus = new BigInteger("C150023E2F70DB7985DED064759CFECF0AF328E69A41DAF4D6F01B538135A6F91F8F8B2A0EC9BA9720CE352EFCF6C5680FFC424BD634864902DE0B4BD6D49F4E580230E3AE97D95C8B19442B3C0A10D8F5633FECEDD6926A7F6DAB0DDB7D457F9EA81B8465FCD6FFFEED114011DF91C059CAEDAF97625F6C96ECC74725556934EF781D866B34F011FCE4D835A090196E9A5F0E4449AF7EB697DDB9076494CA5F81104A305B6DD27665722C46B60E5DF680FB16B210607EF217652E60236C255F6A28315F4083A96791D7214BF64C1DF4FD0DB1944FB26A2A57031B32EEE64AD15A8BA68885CDE74A5BFC920F6ABF59BA5C75506373E7130F9042DA922179251F", 16);
         BigInteger pubExp = new BigInteger("010001", 16);
 
         BigInteger r = new BigInteger(dataWithHash);
 
-        BigInteger s = r.modPow(pubExp,modulus);
+        BigInteger s = r.modPow(pubExp, modulus);
         byte[] temp = s.toByteArray();
-        return Arrays.copyOfRange(temp,temp.length - 256,temp.length);
+        return Arrays.copyOfRange(temp, temp.length - 256, temp.length);
+    }
+
+    public static byte[] getTmpAESKey(byte[] serverNonce, byte[] newNonce) {
+        ByteBuffer buffer = ByteBuffer.allocate(serverNonce.length + newNonce.length);
+        buffer.put(newNonce);
+        buffer.put(serverNonce);
+        byte[] tmp1 = getSHA1hash(buffer.array());
+
+        buffer = ByteBuffer.allocate(serverNonce.length + newNonce.length);
+        buffer.put(serverNonce);
+        buffer.put(newNonce);
+        byte[] tmp2 = getSHA1hash(buffer.array());
+
+        buffer = ByteBuffer.allocate(tmp1.length + 12);
+        buffer.put(tmp1);
+        buffer.put(Arrays.copyOfRange(tmp2, 0, 12));
+        return buffer.array();
+    }
+
+    public static byte[] getTmpAESiv(byte[] serverNonce, byte[] newNonce) {
+        ByteBuffer buffer = ByteBuffer.allocate(serverNonce.length + newNonce.length);
+        buffer.put(serverNonce);
+        buffer.put(newNonce);
+        byte[] tmp1 = getSHA1hash(buffer.array());
+
+        buffer = ByteBuffer.allocate(newNonce.length * 2);
+        buffer.put(newNonce);
+        buffer.put(newNonce);
+        byte[] tmp2 = getSHA1hash(buffer.array());
+
+        buffer = ByteBuffer.allocate(8 + tmp2.length + 4);
+        buffer.put(Arrays.copyOfRange(tmp1, 12, 20));
+        buffer.put(tmp2);
+        buffer.put(Arrays.copyOfRange(newNonce, 0, 4));
+        return buffer.array();
+    }
+
+    public static byte[] aesIGEdecrypt(byte[] tmpAESiv, byte[] tmpAesKey, byte[] data) {
+        try {
+
+            ByteBuffer out = ByteBuffer.allocate(data.length);
+
+            byte[] iv2p = Arrays.copyOfRange(tmpAESiv, 0, tmpAESiv.length / 2);
+            byte[] ivp = Arrays.copyOfRange(tmpAESiv, tmpAESiv.length / 2, tmpAESiv.length);
+
+            int len = data.length / AES_BLOCK_SIZE;
+
+            byte[] xorInput = null;
+            byte[] xorOutput = null;
+
+            SecretKeySpec keySpec = null;
+            keySpec = new SecretKeySpec(tmpAesKey, "AES");
+            Cipher cipher = null;
+            cipher = Cipher.getInstance("AES/ECB/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, keySpec);
+
+            byte[] input = null;
+            byte[] output = null;
+
+            for(int i=0;i < (len - 1);i++) {
+                input = Arrays.copyOfRange(data,i*AES_BLOCK_SIZE,(i+1)*AES_BLOCK_SIZE);
+                xorInput = xor(input, ivp);
+                output = cipher.doFinal(xorInput);
+                xorOutput = xor(output,iv2p);
+                out.put(xorOutput);
+
+                ivp = xorOutput;
+                iv2p = input;
+            }
+            return out.array();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public static byte[] xor(byte[] a, byte[] b){
+        if(a.length == b.length){
+            byte[] res = new byte[a.length];
+            for(int i=0;i<a.length;i++){
+                res[i] = (byte) (a[i]^b[i]);
+            }
+            return res;
+        }else return null;
+    }
+
+    public static byte[] aesIGEencrypt(byte[] tmpAESiv, byte[] tmpAesKey, byte[] data) {
+        try {
+
+            ByteBuffer out = ByteBuffer.allocate(data.length);
+
+            byte[] ivp = Arrays.copyOfRange(tmpAESiv, 0, tmpAESiv.length / 2);
+            byte[] iv2p = Arrays.copyOfRange(tmpAESiv, tmpAESiv.length / 2, tmpAESiv.length);
+
+            int len = data.length / AES_BLOCK_SIZE;
+
+            byte[] xorInput = null;
+            byte[] xorOutput = null;
+
+            SecretKeySpec keySpec = null;
+            keySpec = new SecretKeySpec(tmpAesKey, "AES");
+            Cipher cipher = null;
+            cipher = Cipher.getInstance("AES/ECB/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec);
+
+            byte[] input = null;
+            byte[] output = null;
+
+            for(int i=0;i < (len - 1);i++) {
+
+                input = Arrays.copyOfRange(data,i*AES_BLOCK_SIZE,(i+1)*AES_BLOCK_SIZE);
+                xorInput = xor(input, ivp);
+                output = cipher.doFinal(xorInput);
+                xorOutput = xor(output,iv2p);
+                out.put(xorOutput);
+
+                ivp = xorOutput;
+                iv2p = input;
+            }
+            return out.array();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
