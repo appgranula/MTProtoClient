@@ -7,23 +7,25 @@ import com.ra1ph.MTProtoClient.tl.builtin.TLInteger64;
  * Created by ra1ph on 25.07.13.
  */
 public class CryptedMessage extends Packet{
-    TLInteger64 authKeyId;
-    TLInteger128 msgKey;
-    EncryptedData encryptedData;
-    byte[] packedData;
+    private byte[] authKeyId;
+    private byte[] msgKey;
+    private byte[] encryptedData;
+    private byte[] packedData;
 
-    public CryptedMessage(TLInteger64 authKeyId, TLInteger128 sgKey, EncryptedData encryptedData) {
+    public CryptedMessage(byte[] authKeyId, byte[] sgKey, byte[] encryptedData) {
         this.authKeyId = authKeyId;
         msgKey = sgKey;
         this.encryptedData = encryptedData;
     }
 
-    public CryptedMessage(EncryptedData encryptedData) {
+    public CryptedMessage(byte[] encryptedData) {
         this.encryptedData = encryptedData;
     }
 
-    public void setMessageData(byte[] data){
-        EncryptedData encryptedData = new EncryptedData(data);
-        packedData = encryptedData.getPackedData();
+    public CryptedMessage() {
+    }
+
+    public void setEncryptedData(byte[] data){
+        packedData = data;
     }
 }

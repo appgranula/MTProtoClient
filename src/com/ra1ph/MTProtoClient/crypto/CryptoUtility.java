@@ -152,6 +152,82 @@ public class CryptoUtility {
         return buffer.array();
     }
 
+    public static byte[] getAESkey(byte[] authKey, byte[] msgKey, boolean isOut){
+        int x=0;
+        if(!isOut)x = 8;
+
+        ByteBuffer tempA = ByteBuffer.allocate(msgKey.length + 32 );
+        tempA.put(msgKey);
+        tempA.put(authKey,x,32);
+        byte[] a = getSHA1hash(tempA.array());
+
+        ByteBuffer tempB = ByteBuffer.allocate(msgKey.length + 32 );
+        tempB.put(authKey,32 + x,16);
+        tempB.put(msgKey);
+        tempB.put(authKey,48 + x,16);
+        byte[] b = getSHA1hash(tempB.array());
+
+        ByteBuffer tempC = ByteBuffer.allocate(msgKey.length + 32 );
+        tempC.put(authKey,64 + x,32);
+        tempC.put(msgKey);
+        byte[] c = getSHA1hash(tempC.array());
+
+        ByteBuffer key = ByteBuffer.allocate(8 + 12 + 12);
+        key.put(a,0,8);
+        key.put(b,8,12);
+        key.put(c,4,12);
+
+        return key.array();
+    }
+
+    public static byte[] getAESiv(byte[] authKey, byte[] msgKey, boolean isOut){
+        int x=0;
+        if(!isOut)x = 8;
+
+        ByteBuffer tempA = ByteBuffer.allocate(msgKey.length + 32 );
+        tempA.put(msgKey);
+        tempA.put(authKey,x,32);
+        byte[] a = getSHA1hash(tempA.array());
+
+        ByteBuffer tempB = ByteBuffer.allocate(msgKey.length + 32 );
+        tempB.put(authKey,32 + x,16);
+        tempB.put(msgKey);
+        tempB.put(authKey,48 + x,16);
+        byte[] b = getSHA1hash(tempB.array());
+
+        ByteBuffer tempC = ByteBuffer.allocate(msgKey.length + 32 );
+        tempC.put(authKey,64 + x,32);
+        tempC.put(msgKey);
+        byte[] c = getSHA1hash(tempC.array());
+
+        ByteBuffer tempD = ByteBuffer.allocate(msgKey.length + 32);
+        tempD.put(msgKey);
+        tempD.put(authKey,96 + x,32);
+        byte[] d = getSHA1hash(tempD.array());
+
+        ByteBuffer iv = ByteBuffer.allocate(12 + 8 + 4 + 8);
+        iv.put(a,8,12);
+        iv.put(b,0,8);
+        iv.put(c,16,4);
+        iv.put(d,0,8);
+
+        return iv.array();
+    }
+
+    public static byte[] messageEncrypt(byte[] authKey, byte[] msgKey, byte[] data,  boolean isOut){
+        byte[] key = getAESkey(authKey, msgKey, isOut);
+        byte[] iv = getAESiv(authKey, msgKey, isOut);
+
+        return aesIGEencrypt(iv,key,data);
+    }
+
+    public static byte[] messageDecrypt(byte[] authKey, byte[] msgKey, byte[] data,  boolean isOut){
+        byte[] key = getAESkey(authKey, msgKey, isOut);
+        byte[] iv = getAESiv(authKey, msgKey, isOut);
+
+        return aesIGEdecrypt(iv, key, data);
+    }
+
     public static byte[] aesIGEdecrypt(byte[] tmpAESiv, byte[] tmpAesKey, byte[] data) {
         try {
 
@@ -256,5 +332,15 @@ public class CryptoUtility {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static byte[] getAuthKeyHash(byte[] data) {
+        byte[] authKey = Arrays.copyOfRange(getSHA1hash(data),12,8);
+        return authKey;
+    }
+
+    public static byte[] getMsgKeyHash(byte[] data){
+        byte[] msgKey = Arrays.copyOfRange(data,4,16);
+        return msgKey;
     }
 }

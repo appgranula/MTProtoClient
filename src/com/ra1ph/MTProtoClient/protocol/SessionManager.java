@@ -3,6 +3,8 @@ package com.ra1ph.MTProtoClient.protocol;
 import com.ra1ph.MTProtoClient.tl.builtin.TLInteger;
 import com.ra1ph.MTProtoClient.tl.builtin.TLInteger64;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Random;
 
 /**
@@ -22,16 +24,18 @@ public class SessionManager {
         byte[] rand = new byte[TLInteger64.SIZE];
         new Random().nextBytes(rand);
         sessionId = new TLInteger64(rand);
-
         messageId = 0;
     }
 
-    public TLInteger64 getSessionId() {
-        return sessionId;
+    public byte[] getSessionId() {
+        ByteBuffer temp = ByteBuffer.allocate(8);
+        temp.order(ByteOrder.LITTLE_ENDIAN);
+        temp.put(sessionId.getBytes());
+        return temp.array();
     }
 
     public int getMessageId() {
-        return messageId;
+        return messageId * 2;
     }
 
     public void incrementMessageId(){

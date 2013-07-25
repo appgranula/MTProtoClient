@@ -199,7 +199,11 @@ public class Authorization {
 
                 SaltsStorage salts = SaltsStorage.getInstance();
                 ByteBuffer saltByte = ByteBuffer.allocate(8);
+
+
                 saltByte.put(CryptoUtility.xor(Arrays.copyOfRange(newNonce.getBytes(), 0, 8), Arrays.copyOfRange(res.getServerNonce().getBytes(), 0, 8)));
+                Log.d("myLog","Salt is " + TLUtility.bytesToHex(saltByte.array()));
+
                 TLFutureSalt salt = new TLFutureSalt(null, null, new TLLong(saltByte.array()));
                 salts.addSalt(salt);
 
@@ -233,7 +237,9 @@ public class Authorization {
                     socket.close();
                     socket = getSocket();
                 }
-                storage.addKey(authKey);
+                byte[] tmp = authKey.toByteArray();
+                if(tmp[0]==0)tmp = Arrays.copyOfRange(tmp,1,tmp.length);
+                storage.addKey(tmp);
 
                 getFutureSalts(5);
 
