@@ -58,7 +58,7 @@ public class ServerDHData extends TLObject {
         int gaLen = gA.getRoundedLength();
 
         TLInteger serverTime = new TLInteger();
-        serverTime.deserialize(Arrays.copyOfRange(byteData,TLInteger128.SIZE * 2 + TLInteger.SIZE + primeLen + gaLen, byteData.length));
+        serverTime.deserialize(Arrays.copyOfRange(byteData,TLInteger128.SIZE * 2 + TLInteger.SIZE + primeLen + gaLen, TLInteger128.SIZE * 2 + TLInteger.SIZE + primeLen + gaLen + TLInteger.SIZE));
 
         ServerDHData dhData = new ServerDHData(nonce,serverNonce,g,serverTime,dhPrime,gA);
         return dhData;  //To change body of implemented methods use File | Settings | File Templates.
@@ -66,5 +66,21 @@ public class ServerDHData extends TLObject {
 
     public static int getHashConstructor(){
         return hashConstructor;
+    }
+
+    public TLInteger getG() {
+        return g;
+    }
+
+    public TLInteger getServerTime() {
+        return serverTime;
+    }
+
+    public TLString getDHPrime() {
+        return DHPrime;
+    }
+
+    public TLString getgA() {
+        return gA;
     }
 }

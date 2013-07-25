@@ -17,6 +17,16 @@ public class TLInteger128 extends TLObject {
 
     int[] value;
 
+    public TLInteger128(byte[] value){
+        int[] val = new int[SIZE/4];
+        for(int i=0;i<val.length;i++){
+            ByteBuffer buffer = ByteBuffer.allocate(4);
+            buffer.put(value,i*4,4);
+            val[i] = buffer.getInt(0);
+        }
+        this.value = val;
+    }
+
     public TLInteger128(){
         value = new int[4];
     }

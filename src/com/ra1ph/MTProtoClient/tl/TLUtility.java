@@ -1,6 +1,7 @@
 package com.ra1ph.MTProtoClient.tl;
 
 import com.ra1ph.MTProtoClient.tl.crypto.ServerDHData;
+import com.ra1ph.MTProtoClient.tl.functions.DHGenOk;
 import com.ra1ph.MTProtoClient.tl.functions.ReqDH;
 import com.ra1ph.MTProtoClient.tl.functions.ReqPQ;
 import com.ra1ph.MTProtoClient.tl.functions.ResDHfail;
@@ -38,6 +39,7 @@ public class TLUtility {
         obj.add(ResDHok.class);
         obj.add(ResDHfail.class);
         obj.add(ServerDHData.class);
+        obj.add(DHGenOk.class);
 
         for(int i=0;i<obj.size();i++){
             try {

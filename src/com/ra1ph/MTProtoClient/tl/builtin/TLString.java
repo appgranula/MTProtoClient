@@ -2,6 +2,7 @@ package com.ra1ph.MTProtoClient.tl.builtin;
 
 import com.ra1ph.MTProtoClient.tl.TLObject;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 /**
@@ -56,11 +57,12 @@ public class TLString extends TLObject {
 
             int newLength = temp.length;
             ByteBuffer len = ByteBuffer.allocate(4);
+            len.order(ByteOrder.LITTLE_ENDIAN);
             len.putInt(0,newLength);
-            len.put(0,(byte)0xFE);
 
             ByteBuffer buffer = ByteBuffer.allocate(rounded);
-            buffer.put(len);
+            buffer.put((byte) 0xFE);
+            buffer.put(len.array(),0,3);
             buffer.put(temp);
             return buffer.array();
         }
@@ -77,7 +79,9 @@ public class TLString extends TLObject {
             temp = Arrays.copyOfRange(byteData, 1, length + 1);
         } else {
             ByteBuffer buffer = ByteBuffer.allocate(4);
-            buffer.put(byteData, 1, 3);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
+            buffer.put(byteData, 1, 4);
+            buffer.put(3, (byte) 0x00);
             length = buffer.getInt(0);
             temp = Arrays.copyOfRange(byteData, 4, length + 4);
 

@@ -63,6 +63,20 @@ public class CryptoUtility {
         return buffer.array();
     }
 
+    public static byte[] getDHdataWithHash(byte[] hash, byte[] data) {
+        int ost = (data.length + 20) % 16 > 0 ? 16 : 0;
+        int size = ((20 + data.length)/16)*16 + ost;
+
+        ByteBuffer buffer = ByteBuffer.allocate(size);
+        buffer.put(hash);
+        buffer.put(data);
+
+        byte[] rand = new byte[size - hash.length - data.length];
+        new Random().nextBytes(rand);
+        buffer.put(rand);
+        return buffer.array();
+    }
+
     public static byte[] getRSAEncryptedData(byte[] dataWithHash) {
         BigInteger modulus = new BigInteger("C150023E2F70DB7985DED064759CFECF0AF328E69A41DAF4D6F01B538135A6F91F8F8B2A0EC9BA9720CE352EFCF6C5680FFC424BD634864902DE0B4BD6D49F4E580230E3AE97D95C8B19442B3C0A10D8F5633FECEDD6926A7F6DAB0DDB7D457F9EA81B8465FCD6FFFEED114011DF91C059CAEDAF97625F6C96ECC74725556934EF781D866B34F011FCE4D835A090196E9A5F0E4449AF7EB697DDB9076494CA5F81104A305B6DD27665722C46B60E5DF680FB16B210607EF217652E60236C255F6A28315F4083A96791D7214BF64C1DF4FD0DB1944FB26A2A57031B32EEE64AD15A8BA68885CDE74A5BFC920F6ABF59BA5C75506373E7130F9042DA922179251F", 16);
         BigInteger pubExp = new BigInteger("010001", 16);
@@ -160,7 +174,7 @@ public class CryptoUtility {
             byte[] input = null;
             byte[] output = null;
 
-            for(int i=0;i < (len - 1);i++) {
+            for(int i=0;i < len;i++) {
                 input = Arrays.copyOfRange(data,i*AES_BLOCK_SIZE,(i+1)*AES_BLOCK_SIZE);
                 xorInput = xor(input, ivp);
                 output = cipher.doFinal(xorInput);
@@ -218,7 +232,7 @@ public class CryptoUtility {
             byte[] input = null;
             byte[] output = null;
 
-            for(int i=0;i < (len - 1);i++) {
+            for(int i=0;i < len;i++) {
 
                 input = Arrays.copyOfRange(data,i*AES_BLOCK_SIZE,(i+1)*AES_BLOCK_SIZE);
                 xorInput = xor(input, ivp);
