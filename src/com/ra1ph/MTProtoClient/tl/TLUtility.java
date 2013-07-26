@@ -48,6 +48,7 @@ public class TLUtility {
         obj.add(TLMessageContainer.class);
         obj.add(NewSessionCreated.class);
         obj.add(BadServerSalt.class);
+        obj.add(RpcResult.class);
         obj.add(BoolTrue.class);
         obj.add(BoolFalse.class);
 

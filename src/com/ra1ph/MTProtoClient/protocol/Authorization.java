@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Random;
 
 import com.ra1ph.MTProtoClient.crypto.*;
+import com.ra1ph.MTProtoClient.tl.RpcResult;
 import com.ra1ph.MTProtoClient.tl.TLObject;
 import com.ra1ph.MTProtoClient.tl.TLUtility;
 import com.ra1ph.MTProtoClient.tl.builtin.BoolFalse;
@@ -333,16 +334,19 @@ public class Authorization {
                         TLFutureSalt salt2 = new TLFutureSalt(null, null, badServerSalt.getNewSalt());
                         salts.addSalt(salt2);
                         salts.getNextSalt();
-                    } else if(obj instanceof BoolTrue){
-                        isError = false;
-                        Log.d("myLog", "Sucess!");
-                    }else if(obj instanceof BoolFalse){
-                        Log.d("myLog", "Fail!");
+                    } else if (obj instanceof RpcResult) {
+                        TLObject resObj = TLUtility.getInstance().deserialize(((RpcResult)obj).getResult());
+                        if (resObj instanceof BoolTrue) {
+                            isError = false;
+                            Log.d("myLog", "Sucess!");
+                        } else if (resObj instanceof BoolFalse) {
+                            Log.d("myLog", "Fail!");
+                        }
                     }
 
 
                 }
-            }else if (object instanceof BadServerSalt) {
+            } else if (object instanceof BadServerSalt) {
                 BadServerSalt badServerSalt = (BadServerSalt) object;
                 TLFutureSalt salt2 = new TLFutureSalt(null, null, badServerSalt.getNewSalt());
                 salts.addSalt(salt2);
