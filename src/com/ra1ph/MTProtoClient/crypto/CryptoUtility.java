@@ -334,13 +334,13 @@ public class CryptoUtility {
         return null;
     }
 
-    public static byte[] getAuthKeyHash(byte[] data) {
-        byte[] authKey = Arrays.copyOfRange(getSHA1hash(data),12,8);
+    public static byte[] getAuthKeyHash(byte[] key) {
+        byte[] authKey = Arrays.copyOfRange(getSHA1hash(key),12,20);
         return authKey;
     }
 
     public static byte[] getMsgKeyHash(byte[] data){
-        byte[] msgKey = Arrays.copyOfRange(data,4,16);
+        byte[] msgKey = Arrays.copyOfRange(getSHA1hash(data),4,20);
         return msgKey;
     }
 }

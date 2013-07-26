@@ -53,7 +53,8 @@ public class PacketSimple {
     public int setPacketData(byte[] packetData) {
         this.packetData = packetData;
         if (packetData[0] != 0x7F) {
-            this.rawData = Arrays.copyOfRange(packetData, 1, packetData.length);
+            int len = packetData[0];
+            this.rawData = Arrays.copyOfRange(packetData, 1, len * 4 + 1);
             if (rawData.length == 4) {
                 return ErrorPacket.parseErrorCode(rawData);
             }

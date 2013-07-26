@@ -1,6 +1,9 @@
 package com.ra1ph.MTProtoClient.tl.builtin;
 
 import com.ra1ph.MTProtoClient.tl.TLObject;
+
+import org.apache.http.util.EncodingUtils;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -21,7 +24,7 @@ public class TLString extends TLObject {
     }
 
     public TLString(String str) {
-        this.str = str;
+        this(EncodingUtils.getAsciiBytes(str));
     }
 
     public TLString(byte[] str) {

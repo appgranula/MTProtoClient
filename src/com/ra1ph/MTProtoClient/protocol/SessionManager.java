@@ -34,8 +34,9 @@ public class SessionManager {
         return temp.array();
     }
 
-    public int getMessageId() {
-        return messageId * 2;
+    public int getMessageId(boolean isSuch) {
+        if(isSuch)return messageId * 2 + 1;
+        else return messageId * 2;
     }
 
     public void incrementMessageId(){

@@ -13,6 +13,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -21,6 +22,8 @@ import java.util.Random;
 import com.ra1ph.MTProtoClient.crypto.*;
 import com.ra1ph.MTProtoClient.tl.TLObject;
 import com.ra1ph.MTProtoClient.tl.TLUtility;
+import com.ra1ph.MTProtoClient.tl.builtin.BoolFalse;
+import com.ra1ph.MTProtoClient.tl.builtin.BoolTrue;
 import com.ra1ph.MTProtoClient.tl.builtin.TLInteger;
 import com.ra1ph.MTProtoClient.tl.builtin.TLInteger128;
 import com.ra1ph.MTProtoClient.tl.builtin.TLInteger256;
@@ -35,8 +38,13 @@ import com.ra1ph.MTProtoClient.tl.functions.ReqPQ;
 import com.ra1ph.MTProtoClient.tl.functions.ResDHok;
 import com.ra1ph.MTProtoClient.tl.functions.ResPQ;
 import com.ra1ph.MTProtoClient.tl.functions.SetClientDH;
+import com.ra1ph.MTProtoClient.tl.functions.contest.SaveDeveloperInfo;
+import com.ra1ph.MTProtoClient.tl.functions.service.BadServerSalt;
 import com.ra1ph.MTProtoClient.tl.functions.service.GetFutureSalts;
+import com.ra1ph.MTProtoClient.tl.functions.service.NewSessionCreated;
 import com.ra1ph.MTProtoClient.tl.service.TLFutureSalt;
+import com.ra1ph.MTProtoClient.tl.service.TLMessage;
+import com.ra1ph.MTProtoClient.tl.service.TLMessageContainer;
 import com.ra1ph.MTProtoClient.tl.vector.VectorLong;
 
 /**
@@ -49,7 +57,6 @@ import com.ra1ph.MTProtoClient.tl.vector.VectorLong;
 public class Authorization {
     private static InputStream in;
     private static OutputStream out;
-
 
 
     public Authorization() {
@@ -81,7 +88,7 @@ public class Authorization {
         int error = mR.setMessageData(Arrays.copyOfRange(buffer, 0, n));
         ResPQ res = null;
 
-        if(error != 0) return null;
+        if (error != 0) return null;
 
         if (error == 0) {
             res = (ResPQ) tlUtility.deserialize(mR.getRawMessageData());
@@ -134,7 +141,7 @@ public class Authorization {
 
         mResDH = new Message();
         error = mResDH.setMessageData(Arrays.copyOfRange(buffer, 0, n));
-        if(error != 0) return null;
+        if (error != 0) return null;
         Arrays.fill(buffer, (byte) 0);
 
         TLObject objDH = tlUtility.deserialize(mResDH.getRawMessageData());
@@ -157,7 +164,7 @@ public class Authorization {
             new Random().nextBytes(bBytes);
 
 
-            BigInteger b = new BigInteger(1,bBytes);
+            BigInteger b = new BigInteger(1, bBytes);
 
             BigInteger g = BigInteger.valueOf(dhdData.getG().getValue());
             BigInteger dhPrime = new BigInteger(1, dhdData.getDHPrime().getByteValue());
@@ -192,17 +199,17 @@ public class Authorization {
             mResDH = new Message();
             error = mResDH.setMessageData(Arrays.copyOfRange(buffer, 0, n));
 
-            if(error != 0) return null;
+            if (error != 0) return null;
 
             TLObject obj = tlUtility.deserialize(mResDH.getRawMessageData());
-            if(obj instanceof DHGenOk){
+            if (obj instanceof DHGenOk) {
 
                 SaltsStorage salts = SaltsStorage.getInstance();
                 ByteBuffer saltByte = ByteBuffer.allocate(8);
 
 
                 saltByte.put(CryptoUtility.xor(Arrays.copyOfRange(newNonce.getBytes(), 0, 8), Arrays.copyOfRange(res.getServerNonce().getBytes(), 0, 8)));
-                Log.d("myLog","Salt is " + TLUtility.bytesToHex(saltByte.array()));
+                Log.d("myLog", "Salt is " + TLUtility.bytesToHex(saltByte.array()));
 
                 TLFutureSalt salt = new TLFutureSalt(null, null, new TLLong(saltByte.array()));
                 salts.addSalt(salt);
@@ -220,7 +227,131 @@ public class Authorization {
         return PollardRho.divider.toString();
     }
 
+    public static void sendPing() throws IOException {
 
+        byte[] buffer = new byte[1024];
+        int n = 0;
+
+        Socket socket = getSocket();
+        out = socket.getOutputStream();
+        in = socket.getInputStream();
+
+        out.write(0xEF);
+        out.flush();
+
+        KeyStorage.getInstance().addKey(TLUtility.hexStringToByteArray("7A 23 65 D2 CF D6 EF F8 02 C2 47 16 D3 0A 5E A0 CB BD 75 19 A4 47 42 F5 8E C8 35 E9 61 9B BC 21 CF 23 AF 6F 93 7F BB 8E F2 36 AE 72 69 FF 82 5B A0 3A 31 F9 52 FA 0B 7F 48 A7 56 47 B2 8E AF 1B E6 F6 D1 54 71 53 3F EA 1C 68 42 02 C8 B7 D4 60 B4 A8 9F BC 3E 9C 83 20 1A 16 65 B3 D5 04 3D B7 65 F5 9B 9B D5 5C 36 DA 0A FF 81 72 A1 7C 88 0C B4 6D 1A E0 8F D1 B2 CD 66 39 4C E3 E5 79 5D 26 55 A8 13 63 89 A8 AA F7 79 48 4A 93 7F 78 77 F3 5F 9C 49 91 F3 A9 25 1D B2 EE 2A 55 52 7B F6 24 53 23 31 C5 C4 01 65 94 FF 4C 3D 55 61 50 D8 E2 3E BF 0F 8D 2F 5D 58 7E 86 A3 C6 F8 4A DD DB DE CA 72 87 90 B4 FD 61 2F 1C 88 CE 63 F9 A4 52 C5 D2 99 26 F0 DB 15 E4 C1 1A 65 8D E1 41 82 45 E3 78 87 E9 7D 68 08 2D B1 42 33 DF 52 C2 51 28 5C 63 EA 78 CA 53 50 45 74 A1 1C 4B 98 C4 FB 88 C9"));
+
+        SaltsStorage salts = SaltsStorage.getInstance();
+        ByteBuffer saltByte = ByteBuffer.allocate(8);
+
+        saltByte.put(TLUtility.hexStringToByteArray("D3 79 B6 9F BA 42 E2 D3"));
+
+        Log.d("myLog", "Salt is " + TLUtility.bytesToHex(saltByte.array()));
+
+        TLFutureSalt salt = new TLFutureSalt(null, null, new TLLong(saltByte.array()));
+        salts.addSalt(salt);
+
+        byte[] pingData = TLUtility.hexStringToByteArray("EC 77 BE 7A 00 11 22 33 44 55 66 77");
+
+        EncryptedData enc = new EncryptedData(pingData, 0);
+        byte[] data = enc.getPacketData();
+
+        Log.d("myLog", "OUT  " + TLUtility.bytesToHex(enc.getPacketData()));
+        out.write(enc.getPacketData());
+        out.flush();
+
+        n = in.read(buffer);
+        Log.d("myLog", "IN   " + TLUtility.bytesToHex(buffer));
+
+        EncryptedData answer = new EncryptedData();
+        answer.decryptMessage(buffer);
+    }
+
+    public static void saveDeveloperInfo() throws IOException {
+        byte[] buffer = new byte[1024];
+        int n = 0;
+
+        Socket socket = getSocket();
+        out = socket.getOutputStream();
+        in = socket.getInputStream();
+
+        out.write(0xEF);
+        out.flush();
+
+        KeyStorage.getInstance().addKey(TLUtility.hexStringToByteArray("7A 23 65 D2 CF D6 EF F8 02 C2 47 16 D3 0A 5E A0 CB BD 75 19 A4 47 42 F5 8E C8 35 E9 61 9B BC 21 CF 23 AF 6F 93 7F BB 8E F2 36 AE 72 69 FF 82 5B A0 3A 31 F9 52 FA 0B 7F 48 A7 56 47 B2 8E AF 1B E6 F6 D1 54 71 53 3F EA 1C 68 42 02 C8 B7 D4 60 B4 A8 9F BC 3E 9C 83 20 1A 16 65 B3 D5 04 3D B7 65 F5 9B 9B D5 5C 36 DA 0A FF 81 72 A1 7C 88 0C B4 6D 1A E0 8F D1 B2 CD 66 39 4C E3 E5 79 5D 26 55 A8 13 63 89 A8 AA F7 79 48 4A 93 7F 78 77 F3 5F 9C 49 91 F3 A9 25 1D B2 EE 2A 55 52 7B F6 24 53 23 31 C5 C4 01 65 94 FF 4C 3D 55 61 50 D8 E2 3E BF 0F 8D 2F 5D 58 7E 86 A3 C6 F8 4A DD DB DE CA 72 87 90 B4 FD 61 2F 1C 88 CE 63 F9 A4 52 C5 D2 99 26 F0 DB 15 E4 C1 1A 65 8D E1 41 82 45 E3 78 87 E9 7D 68 08 2D B1 42 33 DF 52 C2 51 28 5C 63 EA 78 CA 53 50 45 74 A1 1C 4B 98 C4 FB 88 C9"));
+
+        SaltsStorage salts = SaltsStorage.getInstance();
+        ByteBuffer saltByte = ByteBuffer.allocate(8);
+
+        saltByte.put(TLUtility.hexStringToByteArray("B3 4A F1 A7 05 B3 E6 34"));
+
+        Log.d("myLog", "Salt is " + TLUtility.bytesToHex(saltByte.array()));
+
+        TLFutureSalt salt = new TLFutureSalt(null, null, new TLLong(saltByte.array()));
+        salts.addSalt(salt);
+
+        boolean isError = true;
+
+        while (isError) {
+            TLInteger vkId = new TLInteger(31430967);
+            TLInteger age = new TLInteger(22);
+            TLString name = new TLString("Mikhail Korshunov");
+            TLString number = new TLString("+79507427849");
+            TLString city = new TLString("Chelyabinsk");
+
+            SaveDeveloperInfo saveDeveloperInfo = new SaveDeveloperInfo(vkId, age, name, number, city);
+            byte[] saveData = saveDeveloperInfo.serialize();
+
+            EncryptedData enc = new EncryptedData(saveData, 0);
+            byte[] data = enc.getPacketData();
+
+            Log.d("myLog", "OUT  " + TLUtility.bytesToHex(enc.getPacketData()));
+            out.write(enc.getPacketData());
+            out.flush();
+
+            n = in.read(buffer);
+            Log.d("myLog", "IN   " + TLUtility.bytesToHex(buffer));
+
+            EncryptedData answer = new EncryptedData();
+            answer.decryptMessage(buffer);
+            Log.d("myLog", "Answer : " + TLUtility.bytesToHex(answer.getMessageData()));
+
+            TLObject object = TLUtility.getInstance().deserialize(answer.getMessageData());
+            if (object instanceof TLMessageContainer) {
+                TLMessageContainer container = (TLMessageContainer) object;
+                ArrayList<TLMessage> messages = (ArrayList<TLMessage>) container.getElements();
+                SessionManager.getInstance().incrementMessageId();
+                for (TLMessage msg : messages) {
+                    TLObject obj = TLUtility.getInstance().deserialize(msg.getData());
+                    if (obj instanceof NewSessionCreated) {
+                        NewSessionCreated newSessionCreated = (NewSessionCreated) obj;
+                        TLFutureSalt salt2 = new TLFutureSalt(null, null, newSessionCreated.getSalt());
+                        salts.addSalt(salt2);
+                        salts.getNextSalt();
+                    } else if (obj instanceof BadServerSalt) {
+                        BadServerSalt badServerSalt = (BadServerSalt) obj;
+                        TLFutureSalt salt2 = new TLFutureSalt(null, null, badServerSalt.getNewSalt());
+                        salts.addSalt(salt2);
+                        salts.getNextSalt();
+                    } else if(obj instanceof BoolTrue){
+                        isError = false;
+                        Log.d("myLog", "Sucess!");
+                    }else if(obj instanceof BoolFalse){
+                        Log.d("myLog", "Fail!");
+                    }
+
+
+                }
+            }else if (object instanceof BadServerSalt) {
+                BadServerSalt badServerSalt = (BadServerSalt) object;
+                TLFutureSalt salt2 = new TLFutureSalt(null, null, badServerSalt.getNewSalt());
+                salts.addSalt(salt2);
+                salts.getNextSalt();
+            }
+
+
+        }
+    }
 
     public static void testAuth() {
         Socket socket = getSocket();
@@ -232,13 +363,13 @@ public class Authorization {
         if (socket != null) {
             try {
                 BigInteger authKey = null;
-                while(authKey == null){
+                while (authKey == null) {
                     authKey = getAuthKey();
                     socket.close();
                     socket = getSocket();
                 }
                 byte[] tmp = authKey.toByteArray();
-                if(tmp[0]==0)tmp = Arrays.copyOfRange(tmp,1,tmp.length);
+                if (tmp[0] == 0) tmp = Arrays.copyOfRange(tmp, 1, tmp.length);
                 storage.addKey(tmp);
 
                 getFutureSalts(5);
@@ -255,7 +386,7 @@ public class Authorization {
         GetFutureSalts getFutureSalts = new GetFutureSalts(num);
 
         Message m = new Message();
-        m.setMessageBody(getFutureSalts.serialize(),0,0);
+        m.setMessageBody(getFutureSalts.serialize(), 0, 0);
 
         Log.d("myLog", "OUT  " + TLUtility.bytesToHex(m.getPacketData()));
         out.write(m.getPacketData());

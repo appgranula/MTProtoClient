@@ -7,6 +7,7 @@ import com.ra1ph.MTProtoClient.tl.builtin.TLLong;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 /**
  * Created by ra1ph on 25.07.13.
@@ -15,9 +16,11 @@ public class EncryptedData extends CryptedMessage {
     byte[] salt, sessionId, messageId;
     byte[] seqNo,messageDataLength;
     byte[] messageData;
-    byte[] encryptedData;
+    byte[] encData;
     private byte[] authKey;
     private byte[] msgKey;
+    private byte[] authKeyId;
+    private byte[] decryptedData;
 
 
 //    9E 39 02 7D CF 27 33 57 - auth_key_id == substr(SHA1(auth_key),12,8)
@@ -31,6 +34,10 @@ public class EncryptedData extends CryptedMessage {
 //    EC 77 BE 7A - ping# == 0x7abe77ec
 //    D4 1B 13 01 00 00 00 00 - ping_id:long == Какое то либо рандомное число
 
+
+    public EncryptedData() {
+    }
+
     public EncryptedData(byte[] messageData, int idPacket) {
         this.messageData = messageData;
         salt = SaltsStorage.getInstance().getSalt().getSalt().getBytes();
@@ -38,7 +45,7 @@ public class EncryptedData extends CryptedMessage {
 
         ByteBuffer temp = ByteBuffer.allocate(4);
         temp.order(ByteOrder.LITTLE_ENDIAN);
-        temp.putInt(0, SessionManager.getInstance().getMessageId());
+        temp.putInt(0, SessionManager.getInstance().getMessageId(true));
 
         seqNo = temp.array();
 
@@ -50,7 +57,8 @@ public class EncryptedData extends CryptedMessage {
         messageId = getMessageId(idPacket);
 
         getPackedData();
-        super(authKey,msgKey,encryptedData);
+
+        setEncryptedData(encData,authKeyId,msgKey);
     }
 
     private byte[] getMessageId(int idPacket) {
@@ -73,17 +81,51 @@ public class EncryptedData extends CryptedMessage {
         nBuffer.put(messageDataLength);
         nBuffer.put(messageData);
 
-        authKey = CryptoUtility.getAuthKeyHash(nBuffer.array());
+        authKey = KeyStorage.getInstance().getCurrentKey();
+        authKeyId = CryptoUtility.getAuthKeyHash(authKey);
         msgKey = CryptoUtility.getMsgKeyHash(nBuffer.array());
 
         int ost = (len % 16) > 0 ? 16 : 0;
         int roundedLen = (len / 16) * 16 + ost;
 
         ByteBuffer buffer = ByteBuffer.allocate(roundedLen);
-        buffer.put(nBuffer);
+        buffer.put(nBuffer.array());
 
+        decryptedData = buffer.array();
         byte[] encrypted = CryptoUtility.messageEncrypt(authKey,msgKey,buffer.array(), true);
-        encryptedData = encrypted;
+        encData = encrypted;
         return encrypted;
+    }
+
+    public int decryptMessage(byte[] packedMessage) {
+        int error = setMessageData(packedMessage);
+        if(error == 0){
+            encData = getEncryptedData();
+
+            authKeyId = getAuthKeyId();
+            msgKey = getMsgKey();
+
+            ByteBuffer tmp = ByteBuffer.allocate(8);
+            tmp.put(authKeyId);
+
+            authKey = KeyStorage.getInstance().getKey(tmp.getLong(0));
+            decryptedData = CryptoUtility.messageDecrypt(authKey,msgKey,encData,false);
+
+            salt = Arrays.copyOfRange(decryptedData,0,8);
+            sessionId = Arrays.copyOfRange(decryptedData,8,16);
+            messageId = Arrays.copyOfRange(decryptedData,16,24);
+            seqNo = Arrays.copyOfRange(decryptedData,24,28);
+            messageDataLength = Arrays.copyOfRange(decryptedData,28,32);
+            messageData = Arrays.copyOfRange(decryptedData,32,decryptedData.length);
+        }
+        return error;
+    }
+
+    public byte[] getDecryptedData() {
+        return decryptedData;
+    }
+
+    public byte[] getMessageData() {
+        return messageData;
     }
 }

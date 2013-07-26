@@ -19,7 +19,7 @@ public class SaltsStorage {
     }
 
     private SaltsStorage(){
-
+        salts = new ArrayList<TLFutureSalt>();
     }
 
     public void addSalt(TLFutureSalt salt){
